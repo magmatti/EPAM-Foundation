@@ -1,8 +1,8 @@
-//
-//  NetworkError.swift
-//  TopRatedMovies
-//
-//  Created by Mateusz Wójtowicz on 25/7/25.
-//
-
 import Foundation
+
+enum NetworkError: Error {
+    case invalidURL
+    case noData
+    case decodingFailed
+    case serverError(statusCode: Int)
+}
