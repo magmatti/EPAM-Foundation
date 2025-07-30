@@ -26,13 +26,28 @@ struct Task2View: View {
                 Text("Loading in progress")
             }
         }.task {
+            let startDate = Date.now
+            
             do {
-                let startDate = Date.now
-                user = try await task2API.getUser()
-                products = try await task2API.getProducts()
-                let endDate = Date.now
+                var fetchedUser: Task2API.User?
+                var fetchedProducts: [Task2API.Product] = []
 
-                duration = DateInterval(start: startDate, end: endDate).duration
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    group.addTask {
+                        fetchedUser = try await task2API.getUser()
+                    }
+                    
+                    group.addTask {
+                        fetchedProducts = try await task2API.getProducts()
+                    }
+                    
+                    try await group.waitForAll()
+                }
+                
+                self.user = fetchedUser
+                self.products = fetchedProducts
+                self.duration = DateInterval(start: startDate, end: .now).duration
+                
             } catch {
                 print("unexpected error")
             }

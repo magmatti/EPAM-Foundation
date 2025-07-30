@@ -16,8 +16,13 @@ struct Task1View: View, @unchecked Sendable {
             Text(fact)
                 .padding()
             Button(action: {
-                task1API.getTrivia(for: .none) { fact in
-                    self.fact = fact ?? "loading error"
+                Task {
+                    do {
+                        let result = try await task1API.getTrivia(for: nil)
+                        self.fact = result
+                    } catch {
+                        self.fact = "Error: \(error)"
+                    }
                 }
             }, label: { Text("Click me") })
         }
@@ -33,26 +38,19 @@ class Task1API: @unchecked Sendable {
     let triviaPath = "random/trivia"
     private var session = URLSession.shared
 
-    func getTrivia(for number: Int?, completion: @Sendable @escaping (String?) -> Void) {
+    func getTrivia(for number: Int?) async throws -> String {
         guard let url = URL(string: baseURL)?.appendingPathComponent(triviaPath) else {
-            completion(nil)
-            return
+            throw URLError(.badURL)
         }
         print(url)
 
-        session.dataTask(with: .init(url: url)) { data, response, error in
-            guard let data else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-            let randomFact = String(data: data, encoding: .utf8)
-            DispatchQueue.main.async {
-                completion(randomFact)
-            }
-
-        }.resume()
+        let (data, _) = try await session.data(from: url)
+        
+        guard let randomFact = String(data: data, encoding: .utf8) else {
+            throw URLError(.cannotDecodeRawData)
+        }
+        
+        return randomFact
     }
 
 }

@@ -46,21 +46,34 @@ struct Task3View: View {
 }
 
 class Task3API {
+    
+    private var continuation: AsyncStream<SignalStrenght>.Continuation?
+    private var isCancelled = false
+    
     enum SignalStrenght: String {
         case weak, strong, excellent, unknown
     }
     
     func signalStrength() -> AsyncStream<SignalStrenght> {
+        isCancelled = false
+        
         return AsyncStream { continuation in
+            self.continuation = continuation
+            
             Task {
-                try? await Task.sleep(for: .seconds(1))
-                continuation.yield(with: .success([SignalStrenght.weak, .strong, .excellent].randomElement() ?? .unknown))
+                while !isCancelled {
+                    try? await Task.sleep(for: .seconds(1))
+                    let next = [SignalStrenght.weak, .strong, .excellent].randomElement()!
+                    continuation.yield(next)
+                }
+                
+                continuation.finish()
             }
         }
     }
     
     func cancel() {
-        // ????
+        isCancelled = true
     }
 }
 
