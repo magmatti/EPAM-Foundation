@@ -51,12 +51,25 @@ class ViewController: UIViewController {
         let text = textView.text ?? ""
         guard let fileURL = getDocumentsDirectory()?.appendingPathComponent(fileName) else { return }
 
-        do {
-            try text.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("saved to \(fileURL.path)")
+        if let data = (text + "\n").data(using: .utf8) {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                if let fileHandle = try? FileHandle(forWritingTo: fileURL) {
+                    defer { fileHandle.closeFile() }
+                    fileHandle.seekToEndOfFile()
+                    fileHandle.write(data)
+                    print("appended to \(fileURL.path)")
+                } else {
+                    print("could not open file for writing")
+                }
+            } else {
+                do {
+                    try data.write(to: fileURL)
+                    print("file created and saved to \(fileURL.path)")
+                } catch {
+                    print("error writing new file: \(error)")
+                }
+            }
             textView.text = ""
-        } catch {
-            print("error saving file: \(error)")
         }
     }
 
